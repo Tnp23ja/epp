@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import PdfViewer from "./components/PdfViewer";
+import HotspotEditor from "./components/HotspotEditor";
 
 export default function Dashboard() {
   const supabase = useMemo(
@@ -19,6 +20,11 @@ export default function Dashboard() {
   const [message, setMessage] = useState("");
   // เก็บรายการไฟล์ทั้งหมดที่อัพโหลดไว้
   const [catalogs, setCatalogs] = useState<any[]>([]);
+  // เก็บ hotspots ของแต่ละ catalog
+  const [hotspots, setHotspots] = useState<any[]>([]);
+  // เก็บว่ากำลังแก้ไข catalog ไหนอยู่
+  const [editingCatalog, setEditingCatalog] = useState<string | null>(null);
+  const [pdfSize, setPdfSize] = useState({ width: 0, height: 0 });
 
   // ดึงรายการไฟล์จาก Supabase ตอนโหลดหน้า
   const fetchCatalogs = async () => {
@@ -119,23 +125,63 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4">
           {catalogs.map((catalog) => (
             <div key={catalog.name} className="border rounded-lg p-4">
-              {/* ชื่อไฟล์ + ปุ่มแชร์ */}
+              {/* ชื่อไฟล์ + ปุ่มต่างๆ */}
               <div className="flex justify-between items-center mb-4">
                 <p className="font-medium">{catalog.name}</p>
-                <button
-                  onClick={() => {
-                    // คัดลอกลิงก์ไปยัง clipboard
-                    const link = `${window.location.origin}/catalog/${catalog.name}`;
-                    navigator.clipboard.writeText(link);
-                    alert("คัดลอกลิงก์แล้ว!");
-                  }}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                >
-                  แชร์ลิงก์
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      setEditingCatalog(
+                        editingCatalog === catalog.name ? null : catalog.name,
+                      )
+                    }
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+                  >
+                    {editingCatalog === catalog.name
+                      ? "ปิด Editor"
+                      : "วาง Hotspot"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const link = `${window.location.origin}/catalog/${catalog.name}`;
+                      navigator.clipboard.writeText(link);
+                      alert("คัดลอกลิงก์แล้ว!");
+                    }}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    แชร์ลิงก์
+                  </button>
+                </div>
               </div>
-              {/* แสดง PDF viewer */}
-              <PdfViewer pdfUrl={getFileUrl(catalog.name)} />
+
+              {/* PDF + Hotspot Editor ซ้อนทับกัน */}
+              <div style={{ position: "relative", display: "inline-block" }}>
+                {/* PDF viewer */}
+                <PdfViewer
+                  pdfUrl={getFileUrl(catalog.name)}
+                  onSizeReady={(w, h) => setPdfSize({ width: w, height: h })}
+                />
+
+                {/* Hotspot Editor ซ้อนทับตรงๆ */}
+                {editingCatalog === catalog.name && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <HotspotEditor
+                      width={pdfSize.width}
+                      height={pdfSize.height}
+                      hotspots={hotspots}
+                      onHotspotsChange={setHotspots}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

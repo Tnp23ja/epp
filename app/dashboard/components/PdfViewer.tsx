@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 interface PdfViewerProps {
   pdfUrl: string; // URL ของไฟล์ PDF
+  onSizeReady?: (width: number, height: number) => void // เพิ่มตรงนี้
 }
 
-export default function PdfViewer({ pdfUrl }: PdfViewerProps) {
+export default function PdfViewer({ pdfUrl, onSizeReady }: PdfViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pageCount, setPageCount] = useState(0); // จำนวนหน้าทั้งหมด
   const [currentPage, setCurrentPage] = useState(1); // หน้าปัจจุบัน
@@ -35,6 +36,11 @@ export default function PdfViewer({ pdfUrl }: PdfViewerProps) {
 
     canvas.width = viewport.width
     canvas.height = viewport.height
+
+    // ส่งขนาดออกไปให้ parent รู้
+    if (onSizeReady) {
+        onSizeReady(viewport.width, viewport.height)
+    }
 
     const context = canvas.getContext("2d")
     if (!context) return
