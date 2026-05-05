@@ -25,6 +25,7 @@ export default function Dashboard() {
   // เก็บว่ากำลังแก้ไข catalog ไหนอยู่
   const [editingCatalog, setEditingCatalog] = useState<string | null>(null);
   const [pdfSize, setPdfSize] = useState({ width: 0, height: 0 });
+  const [currentPage, setCurrentPage] = useState(1); // เพิ่ม state นี้
 
   // ดึงรายการไฟล์จาก Supabase ตอนโหลดหน้า
   const fetchCatalogs = async () => {
@@ -34,10 +35,30 @@ export default function Dashboard() {
       setCatalogs(data);
     }
   };
+  const fetchHotspots = async () => {
+    const { data, error } = await supabase.from("hotspots").select("*");
+
+    if (!error && data) {
+      // แปลงชื่อ column ให้ตรงกับ interface
+      const mapped = data.map((h: any) => ({
+        id: h.id,
+        x: h.x,
+        y: h.y,
+        width: h.width,
+        height: h.height,
+        productName: h.product_name,
+        price: h.price,
+        link: h.link,
+        page: h.page // อย่าลืม page ด้วย
+      }));
+      setHotspots(mapped);
+    }
+  };
 
   // เรียก fetchCatalogs ตอนหน้าโหลดครั้งแรก
   useEffect(() => {
     fetchCatalogs();
+    fetchHotspots();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,6 +181,7 @@ export default function Dashboard() {
                 <PdfViewer
                   pdfUrl={getFileUrl(catalog.name)}
                   onSizeReady={(w, h) => setPdfSize({ width: w, height: h })}
+                  onPageChange={(page) => setCurrentPage(page)} // เพิ่มตรงนี้
                 />
 
                 {/* Hotspot Editor ซ้อนทับตรงๆ */}
@@ -176,8 +198,11 @@ export default function Dashboard() {
                     <HotspotEditor
                       width={pdfSize.width}
                       height={pdfSize.height}
-                      hotspots={hotspots}
+                      hotspots={hotspots.filter((h: any) => h.page === currentPage)} // กรองตามหน้า
                       onHotspotsChange={setHotspots}
+                      supabase={supabase}
+                      catalogName={catalog.name}
+                      currentPage={currentPage}
                     />
                   </div>
                 )}

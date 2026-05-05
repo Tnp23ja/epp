@@ -2,7 +2,7 @@
 import React from "react"; // เพิ่มบรรทัดนี้ด้านบน
 import { useState, useRef } from "react";
 import { Stage, Layer, Rect, Text } from "react-konva";
-
+import { SupabaseClient } from "@supabase/supabase-js";
 // โครงสร้างข้อมูล hotspot แต่ละอัน
 interface Hotspot {
   id: string;
@@ -16,10 +16,13 @@ interface Hotspot {
 }
 
 interface HotspotEditorProps {
-  width: number; // ความกว้างของ PDF
-  height: number; // ความสูงของ PDF
+  width: number;
+  height: number;
   hotspots: Hotspot[];
   onHotspotsChange: (hotspots: Hotspot[]) => void;
+  supabase: SupabaseClient; // เพิ่ม supabase
+  catalogName: string; // เพิ่มชื่อ catalog
+  currentPage: number; // เพิ่มหน้าปัจจุบัน
 }
 
 export default function HotspotEditor({
@@ -27,6 +30,9 @@ export default function HotspotEditor({
   height,
   hotspots,
   onHotspotsChange,
+  supabase,
+  catalogName,
+  currentPage,
 }: HotspotEditorProps) {
   // เก็บตำแหน่งเริ่มต้นตอนลาก
   const [drawing, setDrawing] = useState(false);
@@ -76,8 +82,28 @@ export default function HotspotEditor({
   };
 
   // บันทึก hotspot พร้อมข้อมูลสินค้า
-  const handleSaveHotspot = () => {
+  const handleSaveHotspot = async  () => {
     if (!selectedHotspot) return;
+
+    // บันทึกลง Supabase
+    const { error } = await supabase.from("hotspots").insert({
+      catalog_name: catalogName,
+      page: currentPage,
+      x: selectedHotspot.x,
+      y: selectedHotspot.y,
+      width: selectedHotspot.width,
+      height: selectedHotspot.height,
+      product_name: selectedHotspot.productName,
+      price: selectedHotspot.price,
+      link: selectedHotspot.link,
+    });
+
+    if (error) {
+      alert("บันทึกไม่สำเร็จ: " + error.message);
+      return;
+    }
+
+    // อัพเดท state
     onHotspotsChange([...hotspots, selectedHotspot]);
     setSelectedHotspot(null);
     setCurrentRect(null);
