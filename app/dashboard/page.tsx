@@ -25,7 +25,7 @@ export default function Dashboard() {
   // เก็บว่ากำลังแก้ไข catalog ไหนอยู่
   const [editingCatalog, setEditingCatalog] = useState<string | null>(null);
   const [pdfSize, setPdfSize] = useState({ width: 0, height: 0 });
-  const [currentPage, setCurrentPage] = useState(1); // เพิ่ม state นี้
+  const [currentPage, setInternalPage] = useState(1); // เพิ่ม state นี้
 
   // ดึงรายการไฟล์จาก Supabase ตอนโหลดหน้า
   const fetchCatalogs = async () => {
@@ -181,7 +181,7 @@ export default function Dashboard() {
                 <PdfViewer
                   pdfUrl={getFileUrl(catalog.name)}
                   onSizeReady={(w, h) => setPdfSize({ width: w, height: h })}
-                  onPageChange={(page) => setCurrentPage(page)} // เพิ่มตรงนี้
+                  onPageChange={(page) => setInternalPage(page)} // เพิ่มตรงนี้
                 />
 
                 {/* Hotspot Editor ซ้อนทับตรงๆ */}

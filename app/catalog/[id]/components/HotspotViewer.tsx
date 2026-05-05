@@ -35,7 +35,8 @@ export default function HotspotViewer({ width, height, hotspots }: HotspotViewer
           top: 0,
           left: 0,
           zIndex: 10,
-          cursor: "pointer"
+          cursor: "pointer",
+          pointerEvents: "auto" // รับ event เฉพาะตรง hotspot
         }}
       >
         <Layer>

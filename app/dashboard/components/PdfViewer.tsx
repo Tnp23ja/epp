@@ -6,12 +6,16 @@ interface PdfViewerProps {
   pdfUrl: string; // URL ของไฟล์ PDF
   onSizeReady?: (width: number, height: number) => void; // เพิ่มตรงนี้
   onPageChange?: (page: number) => void; // เพิ่มตรงนี้
+  hidePagination?: boolean ;// เพิ่มตรงนี้
+  currentPage?: number // เพิ่มตรงนี้
+  onPageCountReady?: (count: number) => void // เพิ่มตรงนี้
 }
 
-export default function PdfViewer({ pdfUrl, onSizeReady , onPageChange }: PdfViewerProps) {
+export default function PdfViewer({ pdfUrl, onSizeReady, onPageChange, hidePagination, currentPage: externalPage, onPageCountReady }: PdfViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [pageCount, setPageCount] = useState(0); // จำนวนหน้าทั้งหมด
-  const [currentPage, setCurrentPage] = useState(1); // หน้าปัจจุบัน
+  const [internalPage, setInternalPage] = useState(1);
+  const currentPage = externalPage ?? internalPage // ใช้ externalPage ถ้ามี
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +31,8 @@ export default function PdfViewer({ pdfUrl, onSizeReady , onPageChange }: PdfVie
       if (cancelled) return; // ถ้าปิดไปแล้วให้หยุด
 
       setPageCount(pdf.numPages);
-
+      if (onPageCountReady) onPageCountReady(pdf.numPages) // เพิ่มตรงนี้
+      
       const page = await pdf.getPage(currentPage);
       if (cancelled) return; // เช็คอีกรอบ
 
@@ -64,7 +69,7 @@ export default function PdfViewer({ pdfUrl, onSizeReady , onPageChange }: PdfVie
     return () => {
       cancelled = true;
     };
-  }, [pdfUrl, currentPage]);
+  }, [pdfUrl, currentPage , externalPage ]);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -78,15 +83,16 @@ export default function PdfViewer({ pdfUrl, onSizeReady , onPageChange }: PdfVie
       />
 
       {/* ปุ่มเปลี่ยนหน้า */}
+      {!hidePagination && (
       <div className="flex items-center gap-4">
         <button
           onClick={() => {
             const newPage = Math.max(1, currentPage - 1);
-            setCurrentPage(newPage);
+            setInternalPage(newPage);
             if (onPageChange) onPageChange(newPage);
           }}
           disabled={currentPage === 1}
-          className="bg-gray-200 px-4 py-2 rounded-lg disabled:opacity-50"
+          className="bg-white text-black border border-gray-300 px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-gray-100"
         >
           ← ก่อนหน้า
         </button>
@@ -94,15 +100,16 @@ export default function PdfViewer({ pdfUrl, onSizeReady , onPageChange }: PdfVie
         <button
           onClick={() => {
             const newPage = Math.min(pageCount, currentPage + 1);
-            setCurrentPage(newPage);
+            setInternalPage(newPage);
             if (onPageChange) onPageChange(newPage);
           }}
           disabled={currentPage === pageCount}
-          className="bg-gray-200 px-4 py-2 rounded-lg disabled:opacity-50"
+          className="bg-white text-black border border-gray-300 px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-gray-100"
         >
           ถัดไป →
         </button>
       </div>
+      )}
     </div>
   );
 }
